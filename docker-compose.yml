@@ -1,0 +1,26 @@
+services:
+  # PopUp Video Generator App
+  popup-app:
+    build: .
+    container_name: popup-video-app
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./output:/app/output
+      - ./temp:/app/temp
+      - ./fonts:/app/fonts
+    environment:
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - OLLAMA_MODEL=llama3.2
+      - PYTHONPATH=/app
+      - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    networks:
+      - popup-network
+
+networks:
+  popup-network:
+    driver: bridge
+
