@@ -5,7 +5,7 @@ Transform any YouTube video into an MTV-style Pop-Up Video experience with AI-ge
 
 ## Features
 
-- **Local AI Processing**: Ollama integration with `llama2` (or graceful fallback trivia pool)
+- **Local AI Processing**: Ollama integration with `qwen3:14b` (the model installed on prometheus-1; graceful fallback trivia pool if Ollama is unreachable)
 - **Real Video Processing**: Full video downloads via `yt-dlp` and `FFmpeg` processing
 - **Multiple Bubble Styles**: MTV Classic, Neon Glow, and Retro Rainbow palettes
 - **Robust Font Handling**: Automated cross-platform font detection (Linux, macOS, Windows)

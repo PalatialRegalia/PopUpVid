@@ -10,8 +10,12 @@ services:
       - ./temp:/app/temp
       - ./fonts:/app/fonts
     environment:
+      # Ollama runs on the host (systemd, :11434). host-gateway lets the
+      # container reach it on Linux (prometheus-1) as well as macOS/Windows.
       - OLLAMA_HOST=http://host.docker.internal:11434
-      - OLLAMA_MODEL=llama3.2
+      # qwen3:14b is what's installed on prometheus-1's Ollama. Override by
+      # setting OLLAMA_MODEL in the shell before `docker compose up`.
+      - OLLAMA_MODEL=qwen3:14b
       - PYTHONPATH=/app
       - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
     extra_hosts:

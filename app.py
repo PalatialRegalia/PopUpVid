@@ -42,7 +42,7 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 
 # Ollama configuration — environment variables with sensible defaults
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama2")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen3:14b")
 
 # Palettes for MTV-style pop-up bubbles
 STYLE_PALETTES = {

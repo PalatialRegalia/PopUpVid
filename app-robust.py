@@ -121,7 +121,7 @@ def generate_trivia_ollama(transcript_text):
         prompt = f"Based on this music lyric: '{transcript_text[:100]}', generate one fun MTV Pop-Up Video fact under 80 characters:"
         
         payload = {
-            "model": "llama2",
+            "model": "qwen3:14b",
             "prompt": prompt,
             "stream": False,
             "options": {
