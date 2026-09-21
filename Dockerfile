@@ -26,8 +26,10 @@ RUN mkdir -p /app/output /app/temp /app/fonts
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
+# Copy application files (fonts are bundled so bubbles render identically
+# everywhere; the ./fonts volume mount can still override them)
 COPY app.py .
+COPY fonts/ ./fonts/
 
 # Expose Streamlit port
 EXPOSE 8501

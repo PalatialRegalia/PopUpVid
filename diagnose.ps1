@@ -78,8 +78,8 @@ try {
         }
     } else {
         Write-Host "   ⚠️ No models installed" -ForegroundColor Yellow
-        Write-Host "   🔧 Installing llama2 model..." -ForegroundColor Blue
-        docker exec popup-ollama ollama pull llama2
+        Write-Host "   🔧 Install the model on the host: ollama pull qwen3:14b" -ForegroundColor Blue
+        Write-Host "   (The app falls back to curated trivia until then - no action required)" -ForegroundColor Gray
     }
 } catch {
     Write-Host "   ❌ Ollama not responding" -ForegroundColor Red
@@ -119,15 +119,36 @@ try {
     if ($ffmpegTest) {
         Write-Host "   ✅ FFmpeg available: $ffmpegTest" -ForegroundColor Green
         
-        # Test overlay creation with sample
-        Write-Host "   🧪 Testing overlay creation..." -ForegroundColor Gray
-        $overlayTest = @"
-ffmpeg -f lavfi -i testsrc=duration=5:size=320x240:rate=1 -vf "drawtext=text='Test Pop-up':fontcolor=white:fontsize=20:box=1:boxcolor=red@0.8:x=(w-text_w)/2:y=h-50:enable='between(t,1,4)'" -t 5 -y /app/temp/test_overlay.mp4 2>/dev/null
-"@
+        # Test the REAL production path: Pillow bubble + FFmpeg overlay graph
+        Write-Host "   🧪 Testing bubble render + overlay (production path)..." -ForegroundColor Gray
+        $overlayTest = @'
+python3 <<'PYEOF'
+import sys, subprocess, os
+sys.path.insert(0, '/app')
+from app import generate_bubble_image, build_overlay_graph
+
+size = generate_bubble_image('POP-UP FACT', 'Diagnostics: this bubble renders and overlays correctly', 'MTV Classic', '#FF6B6B', 640, 360, '/tmp/diag_bubble.png', 1, 2)
+bubble = {'png': '/tmp/diag_bubble.png', 'w': size[0], 'h': size[1], 'start': 0.5, 'end': 3.0, 'x': 40, 'y': 180, 'clip': 3.5}
+inputs, graph, label = build_overlay_graph(640, 360, [bubble], animated=True)
+cmd = ['ffmpeg', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=640x360:rate=25:duration=4'] + inputs + \
+      ['-filter_complex', graph, '-map', '[' + label + ']', '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '/tmp/diag_overlay.mp4']
+res = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
+if res.returncode == 0 and os.path.exists('/tmp/diag_overlay.mp4') and os.path.getsize('/tmp/diag_overlay.mp4') > 1000:
+    print('PIPELINE_OK: bubble %dx%d, overlay %d bytes' % (size[0], size[1], os.path.getsize('/tmp/diag_overlay.mp4')))
+else:
+    print('PIPELINE_FAIL: ' + (res.stderr or '')[-200:])
+PYEOF
+'@
         $result = docker exec popup-video-app bash -c $overlayTest
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "   ✅ Overlay creation working" -ForegroundColor Green
+        if ($result -match "PIPELINE_OK") {
+            Write-Host "   ✅ Bubble render + overlay working" -ForegroundColor Green
+            Write-Host "   $result" -ForegroundColor Gray
         } else {
+            Write-Host "   ❌ Overlay creation failed" -ForegroundColor Red
+            Write-Host "   $result" -ForegroundColor Gray
+            Write-Host "   🔧 Check FFmpeg container configuration" -ForegroundColor Blue
+        }
+    } else {
             Write-Host "   ❌ Overlay creation failed" -ForegroundColor Red
             Write-Host "   🔧 Check FFmpeg container configuration" -ForegroundColor Blue
         }
@@ -166,60 +187,48 @@ except Exception as e:
     Write-Host "   ❌ Cannot test transcript extraction" -ForegroundColor Red
 }
 
-# Test 8: End-to-End Pipeline Test
+# Test 8: End-to-End Pipeline Test (offline: synthetic video, real app pipeline)
 Write-Host ""
-Write-Host "8️⃣ Running End-to-End Pipeline Test..." -ForegroundColor Yellow
-Write-Host "   🧪 Testing with Rick Astley video (small sample)..." -ForegroundColor Gray
+Write-Host "🔟 Running End-to-End Pipeline Test..." -ForegroundColor Yellow
+Write-Host "   🧪 Synthesizing a 6s test clip and running the full app pipeline..." -ForegroundColor Gray
 
-$pipelineTest = @"
-python3 -c "
-import os, tempfile, subprocess
-from youtube_transcript_api import YouTubeTranscriptApi
+$pipelineTest = @'
+python3 <<'PYEOF'
+import sys, os, subprocess
+sys.path.insert(0, '/app')
 
-print('Step 1: Download test...')
-temp_dir = '/app/temp/pipeline_test'
-os.makedirs(temp_dir, exist_ok=True)
+print('Step 1: Synthesize test video...')
+src = '/tmp/diag_src.mp4'
+res = subprocess.run(['ffmpeg', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=640x360:rate=25:duration=6',
+                      '-f', 'lavfi', '-i', 'sine=duration=6', '-c:v', 'libx264', '-preset', 'ultrafast',
+                      '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', src],
+                     capture_output=True, text=True, timeout=120)
+if res.returncode != 0 or not os.path.exists(src):
+    print('FAILED to synthesize test video: ' + (res.stderr or '')[-200:])
+    raise SystemExit(1)
+print('OK: %d bytes' % os.path.getsize(src))
 
-try:
-    # Test download (first 10 seconds only)
-    cmd = ['yt-dlp', '-f', 'worst', '--download-archive', '/dev/null', '-o', f'{temp_dir}/test.%(ext)s', '--external-downloader-args', '-ss 0 -t 10', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-    if result.returncode == 0:
-        print('✅ Download: SUCCESS')
-    else:
-        print(f'❌ Download: FAILED - {result.stderr[:100]}')
-        exit(1)
-    
-    print('Step 2: Transcript test...')
-    transcript = YouTubeTranscriptApi.get_transcript('dQw4w9WgXcQ', languages=['en'])
-    print(f'✅ Transcript: Found {len(transcript)} segments')
-    
-    print('Step 3: Overlay test...')
-    video_files = [f for f in os.listdir(temp_dir) if f.endswith(('.mp4', '.webm'))]
-    if video_files:
-        video_path = os.path.join(temp_dir, video_files[0])
-        output_path = os.path.join(temp_dir, 'test_output.mp4')
-        
-        overlay_cmd = [
-            'ffmpeg', '-i', video_path,
-            '-vf', 'drawtext=text=TEST POPUP:fontcolor=white:fontsize=20:box=1:boxcolor=red@0.8:x=(w-text_w)/2:y=h-50:enable=between(t,1,3)',
-            '-c:a', 'copy', '-y', output_path
-        ]
-        
-        overlay_result = subprocess.run(overlay_cmd, capture_output=True, text=True, timeout=30)
-        if overlay_result.returncode == 0 and os.path.exists(output_path):
-            file_size = os.path.getsize(output_path)
-            print(f'✅ Overlay: SUCCESS - Output file {file_size} bytes')
-            print('🎉 END-TO-END PIPELINE WORKING!')
-        else:
-            print(f'❌ Overlay: FAILED - {overlay_result.stderr[:100]}')
-    else:
-        print('❌ No video file found for overlay test')
-        
-except Exception as e:
-    print(f'❌ Pipeline test failed: {str(e)}')
-"
-"@
+print('Step 2: Run create_overlay_video (bubbles + trivia + FFmpeg)...')
+from app import create_overlay_video
+transcript = [
+    {'text': 'intro', 'start': 1.0, 'duration': 4.0},
+    {'text': 'chorus', 'start': 3.5, 'duration': 4.0},
+]
+out, count, facts = create_overlay_video(
+    src, transcript,
+    {'max_popups': 2, 'duration': 2.5, 'bubble_style': 'MTV Classic', 'animated': True},
+    temp_dir='/tmp/diag_work')
+
+size = os.path.getsize(out)
+print('OUTPUT: %s (%d pop-ups, %d bytes)' % (out, count, size))
+for fact in facts:
+    print('  fact at %.1fs: %s' % (fact['start'], fact['text'][:60]))
+if size > 1000 and count == len(facts):
+    print('END-TO-END PIPELINE WORKING!')
+else:
+    print('END-TO-END PIPELINE FAILED')
+PYEOF
+'@
 
 try {
     $pipelineResult = docker exec popup-video-app bash -c $pipelineTest

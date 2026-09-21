@@ -285,7 +285,8 @@ _YOUTUBE_HOST_RE = re.compile(
 
 _VIDEO_ID_PATTERNS = (
     r"(?:youtube\.com|youtube-nocookie\.com)/watch\?(?:[^#\s]*&)?v=([A-Za-z0-9_-]{11})",
-    r"(?:youtu\.be|youtube\.com|youtube-nocookie\.com)/(?:shorts|live|embed|v)/([A-Za-z0-9_-]{11})",
+    r"youtu\.be/([A-Za-z0-9_-]{11})",
+    r"(?:youtube\.com|youtube-nocookie\.com)/(?:shorts|live|embed|v)/([A-Za-z0-9_-]{11})",
     r"[?&]v=([A-Za-z0-9_-]{11})",
 )
 
@@ -1094,7 +1095,7 @@ def build_overlay_graph(v_width, v_height, bubbles, animated=True):
             # work with, but an *unbounded* loop makes FFmpeg encode forever
             # (a looped input never EOFs). Bounding each input with -t keeps the
             # graph finite, so rendering finishes as soon as the video does.
-            clip_end = end + 0.5
+            clip_end = float(bubble.get("clip", end + 0.5))
             input_args += [
                 "-loop", "1", "-framerate", "25", "-t", f"{clip_end:.2f}", "-i", bubble["png"],
             ]
@@ -1220,9 +1221,13 @@ def create_overlay_video(video_path, transcript, style_config, temp_dir=None, pr
                     total_slides=num_slides,
                 )
                 x, y = placement_for(index, v_width, v_height, b_w, b_h)
+                # Bound the looped overlay clip to the video length so the
+                # rendered file never grows past the source duration.
+                clip_end = min(end + 0.5, video_duration) if video_duration else end + 0.5
                 bubbles.append({
                     "png": png_path, "w": b_w, "h": b_h,
                     "start": start, "end": end, "x": x, "y": y,
+                    "clip": clip_end,
                 })
 
         if not bubbles:
@@ -1470,13 +1475,17 @@ def main():
 
         max_popups = st.slider("Max pop-ups", 3, 10, 5)
         popup_duration = st.slider("Pop-up duration (sec per fact)", 2, 8, 4)
-        animated = st.toggle("Animated pop-in", value=True,
-                             help="Fade + float each bubble. Turn off for maximum FFmpeg compatibility.")
+        # st.toggle landed in Streamlit 1.29; fall back to a checkbox on older pins.
+        toggle = getattr(st, "toggle", None) or st.checkbox
+        animated = toggle("Animated pop-in", value=True,
+                          help="Fade + float each bubble. Turn off for maximum FFmpeg compatibility.")
 
         st.header("🎈 Live Bubble Preview")
         st.caption("Exactly what gets baked into the video:")
         try:
-            st.image(render_preview_image(bubble_style), use_column_width=True)
+            # Rendered small so it fits the sidebar naturally (no deprecated
+            # use_column_width / width params needed on any Streamlit version).
+            st.image(render_preview_image(bubble_style, v_width=640, v_height=360))
         except Exception as exc:
             st.warning(f"Preview unavailable: {exc}")
 

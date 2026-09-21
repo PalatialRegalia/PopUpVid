@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PopUp Video Overlay Generator - Docker Setup</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&display=swap');
+
         :root {
+            --font-family-display: 'Archivo Black', 'Segoe UI', system-ui, sans-serif;
             /* Design System Variables */
             --color-white: rgba(255, 255, 255, 1);
             --color-black: rgba(0, 0, 0, 1);
@@ -151,8 +154,10 @@
         }
         
         h1 {
+            font-family: var(--font-family-display);
             font-size: var(--font-size-4xl);
             font-weight: var(--font-weight-semibold);
+            letter-spacing: .3px;
             background: linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1, #FECA57);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -307,14 +312,26 @@
         
         .bubble {
             position: absolute;
-            padding: var(--space-8) var(--space-16);
-            background: rgba(255, 255, 255, 0.9);
-            color: black;
-            border-radius: 20px;
-            font-weight: bold;
+            padding: var(--space-12) var(--space-16);
+            background: #FECA57;
+            color: #1a1918;
+            border-radius: 16px;
+            font-weight: var(--font-weight-semibold);
+            font-size: var(--font-size-sm);
             animation: bubble-float 4s ease-in-out infinite;
-            border: 2px solid white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            border: 2px solid #161515;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28);
+            max-width: 280px;
+        }
+
+        .bubble::before {
+            content: '★ POP-UP FACT';
+            display: block;
+            font-family: var(--font-family-display);
+            font-size: 10px;
+            letter-spacing: .06em;
+            margin-bottom: var(--space-4);
+            opacity: .72;
         }
         
         @keyframes bubble-float {
@@ -351,31 +368,41 @@
         <div class="mtv-demo">
             <h3 style="margin-bottom: var(--space-16); position: relative; z-index: 2;">MTV-Style Pop-Up Magic!</h3>
             <p style="position: relative; z-index: 2;">Transform any YouTube video into an interactive experience with AI-generated trivia bubbles</p>
-            <div class="bubble">🎵 Fun Fact #1!</div>
-            <div class="bubble">💫 Behind the scenes!</div>
-            <div class="bubble">🎭 Did you know?</div>
+            <div class="bubble">Pop-Up Video premiered on VH1 in 1996!</div>
+            <div class="bubble">Trivia text auto-fits every bubble - measured in pixels.</div>
+            <div class="bubble">Three styles: MTV Classic, Neon Glow, Retro Rainbow.</div>
         </div>
         
         <div class="features">
             <div class="feature">
                 <div class="feature-icon">🤖</div>
                 <h4>Local AI Processing</h4>
-                <p>Ollama-powered trivia generation</p>
+                <p>Ollama-powered trivia with a curated fallback pool</p>
             </div>
             <div class="feature">
-                <div class="feature-icon">🐳</div>
-                <h4>Docker Ready</h4>
-                <p>One-command deployment</p>
+                <div class="feature-icon">💬</div>
+                <h4>Pixel-Perfect Bubbles</h4>
+                <p>Auto-fitted text, contrast-aware colors, live preview</p>
             </div>
             <div class="feature">
-                <div class="feature-icon">🪟</div>
-                <h4>Windows 11 Optimized</h4>
-                <p>Native PowerShell integration</p>
+                <div class="feature-icon">🎬</div>
+                <h4>Animated Pop-Ins</h4>
+                <p>Bubbles fade, float and rotate facts across slides</p>
             </div>
             <div class="feature">
                 <div class="feature-icon">🎨</div>
-                <h4>MTV Aesthetic</h4>
-                <p>Colorful animated overlays</p>
+                <h4>Three Bubble Styles</h4>
+                <p>MTV Classic, Neon Glow and Retro Rainbow</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🐗</div>
+                <h4>Docker Ready</h4>
+                <p>One-command deployment with bundled fonts</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🪫</div>
+                <h4>Windows 11 Optimized</h4>
+                <p>Native PowerShell integration</p>
             </div>
         </div>
         
@@ -414,10 +441,11 @@
         <div class="success">
             <strong>✅ What You Get:</strong><br>
             • Real YouTube video processing<br>
-            • AI-generated contextual trivia<br>
-            • FFmpeg video overlays<br>
-            • Windows-compatible font handling<br>
-            • MTV-style animated bubbles
+            • AI-generated contextual trivia (with offline fallback)<br>
+            • Pillow-rendered bubbles that always fit their text<br>
+            • Animated FFmpeg overlays with a static fallback<br>
+            • Bundled fonts for identical rendering everywhere<br>
+            • A trivia timeline of every pop-up added
         </div>
         
         <div style="margin-top: var(--space-32);">
