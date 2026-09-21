@@ -72,6 +72,7 @@ The suite covers URL validation, video ID extraction, trivia sanitization (think
 - **`diagnose.ps1`** — Automated diagnostic and self-healing script (renders a real bubble + overlay end-to-end)
 - **`index.html`** — Landing page with connection testing
 - **`tests/test_app.py`** — 65 unit/integration tests covering the full pipeline
+- **`app-robust.py`** — *Deprecated* early prototype with the old drawtext overlay path; kept for reference, not used by the container or tests
 
 ## Troubleshooting
 

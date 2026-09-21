@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """
+DEPRECATED - kept for reference only. The production app is app.py.
+
+This early prototype uses the old drawtext overlay path (escaping-sensitive,
+fixed font sizes, no bubble images) and is NOT used by the Docker image,
+the tests, or the deploy scripts. See app.py for the current pipeline.
+
 PopUp Video Generator - Simplified & Fault-Tolerant
 =================================================
 
